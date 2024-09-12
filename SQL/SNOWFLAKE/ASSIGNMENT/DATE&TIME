@@ -151,7 +151,7 @@ SELECT
     WHERE DELAY_MORE_1_HR > 60;
 
 
----Find all orders placed between specific date ranges, e.g., between '2023-09-01' and '2023-09-05' and orders placed between 5 PM and 7 PM both for those dates included and without those date too irrespective of dates.
+--9) Find all orders placed between specific date ranges, e.g., between '2023-09-01' and '2023-09-05' and orders placed between 5 PM and 7 PM both for those dates included and without those date too irrespective of dates.
 
 SELECT 
     ORDER_ID
@@ -165,12 +165,12 @@ FROM SWIGGY_ORDER
 WHERE (ORDER_DATE BETWEEN '2023-09-01' AND '2023-09-10')
 AND (TO_CHAR(ORDER_DATE, 'HH24:MI') BETWEEN '17:00' AND '19:00');
 
---	Find orders placed on February 29th (during leap years).
+--10)Find orders placed on February 29th (during leap years).
 
 SELECT LAST_DAY(TO_CHAR('2024-02-12', 'YYYY-DD-MM') );
 
 
---	Calculate the time difference between the order time in 'Asia/Kolkata' and 'America/Los_Angeles'.
+--11))Calculate the time difference between the order time in 'Asia/Kolkata' and 'America/Los_Angeles'.
 
 SELECT TIMESTAMPDIFF (HOUR, IST_DELIVERY_TIME, LA_T_ZN_AFTER_DLST);
 SELECT 
@@ -181,7 +181,7 @@ SELECT
     TIMESTAMPDIFF(HOUR, IST_ORDER_TIME, LA_ORDER_TIME) AS TIME_DIFF
 FROM SWIGGY_ORDER;
 
---12.	Finding the Most Recent Order:Retrieve the most recent order placed in the last 7 days.
+--12)Finding the Most Recent Order:Retrieve the most recent order placed in the last 7 days.
 
 SELECT
     ORDER_ID,
@@ -200,7 +200,7 @@ WHERE ORDER_DATE >= CURRENT_DATE - INTERVAL '7 DAY'
 ORDER BY ORDER_DATE  DESC;
 
 
---•	Calculate the average delivery time for each city
+--13)	Calculate the average delivery time for each city
 
 SELECT 
     CITY,
@@ -217,7 +217,7 @@ SELECT
 FROM MASTER_TABLE
 GROUP BY CITY;
 
---14.	Finding Busiest Days by City:Identify which day of the week has the highest number of orders for each city.
+--14)	Finding Busiest Days by City:Identify which day of the week has the highest number of orders for each city.
 
 CREATE OR REPLACE TABLE  MASTER_CT AS
 SELECT 
@@ -254,7 +254,7 @@ AND TO_VARCHAR(ORDER_DATE, 'HH24:MI') BETWEEN '17:00' AND '20:00'
 ORDER BY DELAY_MORE_1_HR DESC;
 
 
---16 .	Orders with Week-to-Week Growth: Calculate week-on-week growth of orders.
+--16)	Orders with Week-to-Week Growth: Calculate week-on-week growth of orders.
 
 SELECT
     WEEKOFYEAR(ORDER_DATE) AS WEEK_OF_YEAR,
