@@ -1,1 +1,281 @@
+CREATE DATABASE SWIGGY;
+CREATE SCHEMA SWIGGY_SCHEMA;
+
+CREATE OR REPLACE TABLE SWIGGY_ORDER(
+ORDER_ID INT PRIMARY KEY,
+CUSTOMER_NAME VARCHAR(50),
+RESTAURANT_NAME VARCHAR(50),
+ORDER_DATE DATETIME,
+DELIVERY_TIME DATETIME,
+DELIVERY_ADDRESS VARCHAR(50),
+CITY VARCHAR(20),
+DELIVERY_STATUS VARCHAR(20),
+ORDER_AMOUNT FLOAT(),
+DELIVERY_AGENT VARCHAR(15)
+);
+
+TRUNCATE TABLE SWIGGY_ORDER;
+
+CREATE OR REPLACE FILE FORMAT SWIGGY_CSV
+TYPE = 'CSV'
+COMPRESSION = 'NONE'
+FIELD_DELIMITER =','
+FIELD_OPTIONALLY_ENCLOSED_BY = 'NONE'
+SKIP_HEADER = 1;
+
+SELECT * FROM SWIGGY_ORDER;
+
+SELECT CURRENT_TIMESTAMP;
+
+ALTER SESSION SET TIMEZONE = 'Asia/Kolkata';
+SELECT CURRENT_TIMESTAMP() AS asia_kol_current_time;
+
+--1)	Extracting Date Components:
+
+SELECT ORDER_ID, CUSTOMER_NAME, EXTRACT(YEAR FROM ORDER_DATE) AS YRS, 
+EXTRACT(MONTH FROM ORDER_DATE) AS MTS,
+EXTRACT(DAY FROM ORDER_DATE) AS DAYS,
+FROM SWIGGY_ORDER;
+
+--2)	Get the current timestamp and compare it with the delivery_time.
+
+---Extract the time zone of a timestamp that already has a time zone associated with it.
+SELECT OREDR_ID,
+    customer_name,
+    delivery_time,
+    delivery_time::TIMESTAMP_TZ AS delivery_time_TZ
+FROM SWIGGY_ORDER;
+
+--3)•	Calculate the number of days,hours,minutes,etc between the order_date and delivery_time and store it in respective columns.
+--Add 45 minutes to the delivery_time and show the updated time
+
+SELECT DATEDIFF('DAY',ORDER_DATE, DELIVERY_TIME) FROM SWIGGY_ORDER AS ORDER_DAY;
+SELECT DATEDIFF ('HOUR',ORDER_DATE, DELIVERY_TIME) FROM SWIGGY_ORDER AS ORDER_HR;
+SELECT DATEDIFF('MINUTE', ORDER_DATE, DELIVERY_TIME) FROM SWIGGY_ORDER AS ORDER_MM;
+
+SELECT 
+    ORDER_ID,
+    CUSTOMER_NAME, 
+    DELIVERY_TIME,
+    DATEADD ('MINUTE',45,DELIVERY_TIME )  AS UPD_DEL_TIME
+FROM SWIGGY_ORDER;
+
+
+--•	Find all orders placed in September of any year.SELECT 
+
+SELECT ORDER_ID, CUSTOMER_NAME,
+EXTRACT(MONTH FROM ORDER_DATE) AS ORDER_MONTH
+FROM SWIGGY_ORDER
+WHERE EXTRACT(MONTH FROM ORDER_DATE) = 09;
+
+--4.	Time Zone Conversion: Convert the delivery_time from UTC to a specific time zone (e.g., 'Asia/Kolkata').
+
+SELECT CURRENT_TIMESTAMP;
+
+ALTER SESSION SET TIMEZONE = 'UTC';
+SELECT CURRENT_TIMESTAMP() AS UTC_TIME_ZONE;
+
+ALTER SESSION SET TIMEZONE = 'Asia/Kolkata';
+
+
+SELECT 
+    ORDER_ID,
+    CUSTOMER_NAME,
+    CONVERT_TIMEZONE('UTC','Asia/Kolkata', DELIVERY_TIME) as IST_DELIVERY_TIME
+    FROM SWIGGY_ORDER;
+
+
+--5.	Orders on Specific Weekends:Find all orders placed on a weekend (Saturday or Sunday).
+
+SELECT 
+    ORDER_ID,
+    CUSTOMER_NAME,
+    DAYOFWEEK(DELIVERY_TIME) AS WEEKEND_ORDER
+    FROM SWIGGY_ORDER
+    WHERE WEEKEND_ORDER =0 OR WEEKEND_ORDER=6;
+
+-- USE COUNT FUNCTIONALITY
+
+SELECT COUNT( ORDER_ID)FROM SWIGGY_ORDER;
+
+--6.	Calculating Peak Hours:Identify the peak delivery hours by extracting the hour from delivery_time and grouping by hour
+--Identify which day of the week has the most deliveries.
+
+SELECT  ORDER_ID, EXTRACT(HOURS FROM DELIVERY_TIME) AS OREDR_HOUR
+FROM SWIGGY_ORDER;
+
+
+CREATE OR REPLACE TABLE MASTER_TABLE AS
+SELECT 
+    ORDER_ID,
+    CUSTOMER_NAME,
+    ORDER_DATE,
+    DELIVERY_TIME,
+    CITY,
+    EXTRACT(YEAR FROM ORDER_DATE) AS MT_ORDER_YR,
+    EXTRACT(MONTH FROM ORDER_DATE) AS MT_ORDER_MNTH,
+    EXTRACT(WEEK FROM ORDER_DATE) AS MT_ORDER_WEEK,
+    EXTRACT(DAY FROM ORDER_DATE) AS MT_ORDER_DAY,
+    EXTRACT(HOUR FROM ORDER_DATE) AS MT_ORDER_HR,
+    FROM SWIGGY_ORDER;
+
+SELECT MT_ORDER_HR,
+        COUNT(ORDER_ID) AS MT_ORDER_COUNT
+FROM MASTER_TABLE
+GROUP BY MT_ORDER_HR
+ORDER BY MT_ORDER_HR;
+
+SELECT MT_ORDER_DAY,
+        COUNT(ORDER_ID) AS MT_ORDER_DAY_COUNT
+FROM MASTER_TABLE
+GROUP BY MT_ORDER_DAY
+ORDER BY MT_ORDER_DAY;
+
+SELECT * FROM MASTER_TABLE;
+
+--7.	Handling Daylight Saving Time:Convert the delivery_time into a time zone that observes daylight saving time (e.g., 'America/New_York') and check if any orders fall during the daylight saving adjustment period.
+
+ALTER SESSION SET TIMEZONE = 'America/Los_Angeles';
+SELECT
+    DELIVERY_TIME,
+    CONVERT_TIMEZONE('UTC','America/Los_Angeles', DELIVERY_TIME) AS LA_T_ZN_AFTER_DLST
+FROM SWIGGY_ORDER;
+
+----8)	Find orders where the delivery took more than 1 hour.
+
+SELECT
+    ORDER_ID,
+    CUSTOMER_NAME,
+    DATEDIFF('MINUTE',ORDER_DATE,DELIVERY_TIME) AS DELAY_MORE_1_HR
+    FROM SWIGGY_ORDER
+    WHERE DELAY_MORE_1_HR > 60;
+
+
+---Find all orders placed between specific date ranges, e.g., between '2023-09-01' and '2023-09-05' and orders placed between 5 PM and 7 PM both for those dates included and without those date too irrespective of dates.
+
+SELECT 
+    ORDER_ID
+    DATEADD('DAY',4,'2023-09-01') AS NEXT_5_DAY_ORDER
+FROM SWIGGY_ORDER;
+
+SELECT
+    ORDER_ID,
+    ORDER_DATE AS NEXT_10_DAYS_ORDER
+FROM SWIGGY_ORDER
+WHERE (ORDER_DATE BETWEEN '2023-09-01' AND '2023-09-10')
+AND (TO_CHAR(ORDER_DATE, 'HH24:MI') BETWEEN '17:00' AND '19:00');
+
+--	Find orders placed on February 29th (during leap years).
+
+SELECT LAST_DAY(TO_CHAR('2024-02-12', 'YYYY-DD-MM') );
+
+
+--	Calculate the time difference between the order time in 'Asia/Kolkata' and 'America/Los_Angeles'.
+
+SELECT TIMESTAMPDIFF (HOUR, IST_DELIVERY_TIME, LA_T_ZN_AFTER_DLST);
+SELECT 
+    ORDER_ID,
+    ORDER_DATE,
+    CONVERT_TIMEZONE('UTC', 'Asia/Kolkata', ORDER_DATE) AS IST_ORDER_TIME,
+    CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', ORDER_DATE) AS LA_ORDER_TIME,
+    TIMESTAMPDIFF(HOUR, IST_ORDER_TIME, LA_ORDER_TIME) AS TIME_DIFF
+FROM SWIGGY_ORDER;
+
+--12.	Finding the Most Recent Order:Retrieve the most recent order placed in the last 7 days.
+
+SELECT
+    ORDER_ID,
+    ORDER_DATE
+FROM SWIGGY_ORDER
+WHERE ORDER_DATE >'2024-09-2'
+ORDER BY ORDER_DATE  DESC;
+
+
+
+SELECT
+    ORDER_ID,
+    ORDER_DATE
+FROM SWIGGY_ORDER
+WHERE ORDER_DATE >= CURRENT_DATE - INTERVAL '7 DAY'
+ORDER BY ORDER_DATE  DESC;
+
+
+--•	Calculate the average delivery time for each city
+
+SELECT 
+    CITY,
+    AVG (TIMESTAMPDIFF(MINUTE, ORDER_DATE, DELIVERY_TIME ) ) AS AVG_DELIVERY_TIME 
+FROM MASTER_TABLE
+GROUP BY CITY;
+
+  
+-- WHAT IS ERROR IN THE QUERRY
+SELECT 
+    CITY,
+    TIMESTAMPDIFF(MINUTE, ORDER_DATE, DELIVERY_TIME ) AS TIME_FOR_DELIVERY,
+    AVG (TIME_FOR_DELIVERY) AS AVG_DELIVERY_TIME 
+FROM MASTER_TABLE
+GROUP BY CITY;
+
+--14.	Finding Busiest Days by City:Identify which day of the week has the highest number of orders for each city.
+
+CREATE OR REPLACE TABLE  MASTER_CT AS
+SELECT 
+    ORDER_ID,
+    DAYOFWEEK(ORDER_DATE) AS DAY_OF_ORDER,
+FROM SWIGGY_ORDER;
+SELECT * FROM MASTER_CT;
+
+SELECT DAY_OF_ORDER,
+COUNT(ORDER_ID) AS ORDER_COUNT_OF_DAY
+FROM MASTER_CT
+GROUP BY DAY_OF_ORDER
+ORDER BY DAY_OF_ORDER;
+
+----------------------OR-----------------
+SELECT 
+    DAYOFWEEK(ORDER_DATE) AS ORDER_DAY_OF_WEEK,
+    COUNT(ORDER_ID) AS ORDER_COUNT_OF_DAY,
+FROM SWIGGY_ORDER
+GROUP BY ORDER_DAY_OF_WEEK
+ORDER BY ORDER_DAY_OF_WEEK;
+
+
+--15) Delayed Deliveries Based on Peak Hours:Identify orders that took longer during peak hours (5 PM - 8 PM).
+
+
+SELECT
+    ORDER_ID,
+    CUSTOMER_NAME,
+    DATEDIFF('MINUTE',ORDER_DATE,DELIVERY_TIME) AS DELAY_MORE_1_HR
+FROM SWIGGY_ORDER
+WHERE DELAY_MORE_1_HR > 60
+AND TO_VARCHAR(ORDER_DATE, 'HH24:MI') BETWEEN '17:00' AND '20:00'
+ORDER BY DELAY_MORE_1_HR DESC;
+
+
+--16 .	Orders with Week-to-Week Growth: Calculate week-on-week growth of orders.
+
+SELECT
+    WEEKOFYEAR(ORDER_DATE) AS WEEK_OF_YEAR,
+    COUNT(ORDER_ID) AS WEEK_ORDER_COUNT
+FROM SWIGGY_ORDER
+GROUP BY WEEK_OF_YEAR
+ORDER BY WEEK_OF_YEAR;
+
+--17)Finding Orders Affected by Public Holidays:Identify orders placed on specific public holidays (e.g., New Year's Day, Diwali).
+
+SELECT
+    COUNT(ORDER_ID) AS COUNT_OF_NEW_YEAR_24    
+FROM SWIGGY_ORDER
+WHERE EXTRACT(DAY, ORDER_DATE) = 1
+AND EXTRACT(MONTH, ORDER_DATE)= 1
+AND EXTRACT(YEAR,ORDER_DATE)=2024;
+
+
+
+
+
+
+
 
