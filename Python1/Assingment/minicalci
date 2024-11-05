@@ -1,0 +1,20 @@
+num1 = float(input("Enter the first number: "))
+num2 = float(input("Enter the second number: "))
+
+sum_result = num1 + num2
+print("The sum of given number is", sum_result)
+
+subtract_result = num1 - num2
+print("The result of subtraction :" ,subtract_result)
+
+multiply_result = num1 * num2
+print("The product of given number is :", multiply_result)
+
+if num2 != 0:
+    divide_result = num1 / num2
+    print(f"The result of dividing {num7} by {num2} is: {divide_result}")
+else:
+    print("Division by zero is not allowed.")
+sum_as_string = str(sum_result)
+print("The sum of given number displayed as string", sum_as_string)
+print(type(sum_as_string))
